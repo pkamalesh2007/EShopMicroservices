@@ -1,13 +1,30 @@
-version: '3.8'
-
 services:
   catalogdb:
-    image: postgres:18
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: kamala21
       POSTGRES_DB: CatalogDb
     ports:
+      # Host 5433 -> container 5432, matching Port=5433 in appsettings.json.
       - "5433:5432"
     volumes:
-      - postgres_catalog:/var/lib/postgresql        # note: no /data
+      # postgres:18 expects the volume one level above the cluster directory.
+      - postgres_catalog:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d CatalogDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  catalog.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      # Inside the compose network the database is reached by service name on 5432,
+      # so this overrides the localhost:5433 value used when debugging from the host.
+      - ConnectionStrings__MartenConnection=Host=catalogdb;Port=5432;Database=CatalogDb;Username=postgres;Password=kamala21;Include Error Detail=true
+    depends_on:
+      catalogdb:
+        condition: service_healthy
+    ports:
+      - "6000:8080"
