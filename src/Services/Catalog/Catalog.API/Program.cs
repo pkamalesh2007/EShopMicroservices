@@ -8,8 +8,10 @@ builder.Services.AddMediatR(config =>
 builder.Services.AddMarten(options =>
 {
     options.Connection(builder.Configuration.GetConnectionString("MartenConnection")!);
+    options.Schema.For<Product>();
 
-}).UseLightweightSessions();
+}).UseLightweightSessions()
+  .ApplyAllDatabaseChangesOnStartup();
 
 //Add Services to the container.
 
